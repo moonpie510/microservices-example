@@ -1,0 +1,49 @@
+services:
+    products:
+        build: ./products/docker/php-fpm
+        container_name: products
+        restart: unless-stopped
+        working_dir: /var/www/products/site
+        volumes:
+            - ./products/docker/php-fpm/php.ini:/etc/php/8.3/fpm/conf.d/99-overrides.ini
+            - ./products/docker/php-fpm/php-fpm.conf:/etc/php/8.3/fpm/pool.d/z-overrides.conf
+            - ./products/docker/php-fpm/log:/var/log/php-fpm
+            - ./products:/var/www/products/site
+        depends_on:
+          - mysql
+        networks:
+            - common
+
+    products_nginx:
+      image: nginx:1.29.1-alpine
+      container_name: products_nginx
+      volumes:
+        - ./products:/var/www/products/site
+        - ./products/docker/nginx/conf.d:/etc/nginx/conf.d
+        - ./products/docker/nginx/log:/var/log/nginx
+      networks:
+        - common
+      ports:
+        - "8001:80"
+      depends_on:
+        - products
+
+    mysql:
+      image: mysql:8
+      container_name: mysql
+      restart: unless-stopped
+      environment:
+        MYSQL_ROOT_PASSWORD: password
+      volumes:
+        - ./mysql/my.cnf:/etc/mysql/conf.d/99-overrides.cnf
+        - ./mysql/db:/var/lib/mysql
+        - ./mysql/bak/:/bak
+        - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      ports:
+        - "3306:3306"
+      networks:
+        - common
+
+networks:
+    common:
+        external: true
