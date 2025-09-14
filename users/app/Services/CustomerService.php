@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\DTOs\CustomerData;
+use App\Events\CustomerCreated;
 use App\Repositories\CustomerRepository;
+use Illuminate\Support\Facades\DB;
 
 readonly class CustomerService
 {
@@ -13,8 +16,13 @@ readonly class CustomerService
 
     public function create(string $name, string $surname, string $email): void
     {
-        $password = 'password';
+        DB::transaction(function () use ($name, $surname, $email) {
+            $password = 'password';
 
-        $this->customers->create(name: $name, surname: $surname, email: $email, password: $password);
+            $customer = $this->customers->create(name: $name, surname: $surname, email: $email, password: $password);
+            $customerData = CustomerData::fromModel($customer, $password);
+
+            CustomerCreated::dispatch($customerData);
+        });
     }
 }
