@@ -28,6 +28,35 @@ services:
       depends_on:
         - products
 
+    users:
+      build: ./users/docker/php-fpm
+      container_name: users
+      restart: unless-stopped
+      working_dir: /var/www/users/site
+      volumes:
+        - ./users/docker/php-fpm/php.ini:/etc/php/8.3/fpm/conf.d/99-overrides.ini
+        - ./users/docker/php-fpm/php-fpm.conf:/etc/php/8.3/fpm/pool.d/z-overrides.conf
+        - ./users/docker/php-fpm/log:/var/log/php-fpm
+        - ./users:/var/www/users/site
+      depends_on:
+        - mysql
+      networks:
+        - common
+
+    users_nginx:
+      image: nginx:1.29.1-alpine
+      container_name: users_nginx
+      volumes:
+        - ./users:/var/www/users/site
+        - ./users/docker/nginx/conf.d:/etc/nginx/conf.d
+        - ./users/docker/nginx/log:/var/log/nginx
+      networks:
+        - common
+      ports:
+        - "8002:80"
+      depends_on:
+        - users
+
     mysql:
       image: mysql:8
       container_name: mysql

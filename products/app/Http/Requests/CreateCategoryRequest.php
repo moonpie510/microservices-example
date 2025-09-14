@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Category;
-use App\Traits\ResponseTrait;
+use App\Traits\ResponseHelperTrait;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -11,7 +11,7 @@ use Illuminate\Validation\Rule;
 
 class CreateCategoryRequest extends FormRequest
 {
-    use ResponseTrait;
+    use ResponseHelperTrait;
 
     public function getTitle(): ?string
     {

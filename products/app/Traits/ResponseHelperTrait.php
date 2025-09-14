@@ -4,7 +4,7 @@ namespace App\Traits;
 
 use Illuminate\Http\JsonResponse;
 
-trait ResponseTrait
+trait ResponseHelperTrait
 {
     public function responseSuccess(array $data = [], string $message = 'success'): JsonResponse
     {

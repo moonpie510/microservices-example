@@ -2,30 +2,30 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Category;
+use App\Models\Customer;
 use App\Traits\ResponseHelperTrait;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 
-class CreateProductRequest extends FormRequest
+class CreateCustomerRequest extends FormRequest
 {
     use ResponseHelperTrait;
 
-    public function getTitle(): ?string
+    public function getName(): ?string
     {
-        return $this->input('title');
+        return $this->input('name');
     }
 
-    public function getCategoryId(): ?string
+    public function getSurname(): ?string
     {
-        return $this->input('category_id');
+        return $this->input('surname');
     }
 
-    public function getPrice(): ?float
+    public function getEmail(): ?string
     {
-        return $this->input('price');
+        return $this->input('email');
     }
 
     public function authorize(): bool
@@ -36,9 +36,9 @@ class CreateProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string'],
-            'category_id' => ['required', Rule::exists(Category::TABLE_NAME, 'id')],
-            'price' => ['required', 'numeric', 'gte:1'],
+            'name' => ['required', 'string'],
+            'surname' => ['required', 'string'],
+            'email' => ['required', 'email', Rule::unique(Customer::TABLE_NAME, 'email')],
         ];
     }
 
