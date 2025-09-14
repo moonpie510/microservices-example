@@ -57,6 +57,35 @@ services:
       depends_on:
         - users
 
+    notifications:
+      build: ./notifications/docker/php-fpm
+      container_name: notifications
+      restart: unless-stopped
+      working_dir: /var/www/notifications/site
+      volumes:
+        - ./notifications/docker/php-fpm/php.ini:/etc/php/8.3/fpm/conf.d/99-overrides.ini
+        - ./notifications/docker/php-fpm/php-fpm.conf:/etc/php/8.3/fpm/pool.d/z-overrides.conf
+        - ./notifications/docker/php-fpm/log:/var/log/php-fpm
+        - ./notifications:/var/www/notifications/site
+      depends_on:
+        - mysql
+      networks:
+        - common
+
+    notifications_nginx:
+      image: nginx:1.29.1-alpine
+      container_name: notifications_nginx
+      volumes:
+        - ./notifications:/var/www/notifications/site
+        - ./notifications/docker/nginx/conf.d:/etc/nginx/conf.d
+        - ./notifications/docker/nginx/log:/var/log/nginx
+      networks:
+        - common
+      ports:
+        - "8003:80"
+      depends_on:
+        - notifications
+
     mysql:
       image: mysql:8
       container_name: mysql
@@ -70,6 +99,15 @@ services:
         - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
       ports:
         - "3306:3306"
+      networks:
+        - common
+
+    mailpit:
+      image: axllent/mailpit:v1.27
+      container_name: mailpit
+      ports:
+        - "8025:8025"
+        - "1025:1025"
       networks:
         - common
 

@@ -23,3 +23,13 @@ docker compose exec users bash -c "
   chmod 777 -R ./bootstrap/cache &&
   php artisan migrate
 "
+
+echo "Разворачиваем микросервис notifications"
+
+docker compose exec notifications bash -c "
+  cp .env.example .env &&
+  composer install &&
+  php artisan storage:link &&
+  chmod 777 -R ./storage &&
+  chmod 777 -R ./bootstrap/cache
+"
