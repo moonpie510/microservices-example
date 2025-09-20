@@ -2,11 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Mail\CustomerCreated;
 use App\Services\RabbitmqService;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Mail;
-use PhpAmqpLib\Message\AMQPMessage;
 
 class RabbitmqConsumeCommand extends Command
 {
@@ -21,13 +18,11 @@ class RabbitmqConsumeCommand extends Command
         parent::__construct();
     }
 
-    public function handle()
+    public function handle(): void
     {
-        $callback = function (AMQPMessage $msg) {
-            $data = json_decode($msg->getBody(), true);
-            Mail::to($data['email'])->send(new CustomerCreated($data));
-        };
+        $this->info('Получение сообщений из очереди ...');
+        $this->info('Для остановки нажмите Ctrl+C');
 
-        $this->rabbitmqService->consume('users', $callback);
+        $this->rabbitmqService->consumeNotificationsQueue();
     }
 }

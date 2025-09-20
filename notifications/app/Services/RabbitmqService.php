@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\EventType;
+use App\Enums\RabbitQueue;
+use App\Mail\CustomerCreated;
+use Illuminate\Support\Facades\Mail;
 use PhpAmqpLib\Channel\AMQPChannel;
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
@@ -12,13 +16,9 @@ class RabbitmqService
     private string $port;
     private string $user;
     private string $password;
-
-    private ?AMQPStreamConnection $connection = null;
-    private ?AMQPChannel $channel = null;
-
-    private string $queueName;
-    private string $routingKey;
-    private string $exchangeName = 'laravel';
+    private AMQPStreamConnection $connection;
+    private AMQPChannel $channel;
+    private string $exchangeName = 'microservices_example';
 
     public function __construct()
     {
@@ -30,38 +30,32 @@ class RabbitmqService
         $this->connection = new AMQPStreamConnection($this->host, $this->port, $this->user, $this->password);
 
         $this->channel = $this->connection->channel();
-        $this->channel->basic_qos(0, 1, false);
         $this->channel->exchange_declare($this->exchangeName, 'direct', false, true, false);
     }
 
-    public function setQueue(string $queue, string $routingKey): static
+    public function publish(EventType $eventType, string $message): void
     {
-        $this->queueName = $queue;
-        $this->routingKey = $routingKey;
-
-        $this->channel->queue_declare($queue, false, true, false, false);
-        $this->channel->queue_bind($queue, $this->exchangeName, $routingKey);
-
-        return $this;
-    }
-
-    public function publish(string $message): void
-    {
-        if (empty($this->queueName || $this->routingKey)) {
-            throw new \Exception('Сначала создайте очередь через метод setQueue');
+        foreach ($eventType->getQueues() as $queue) {
+            /** @var RabbitQueue $queue */
+            $this->channel->queue_declare($queue->value, false, true, false, false);
+            $this->channel->queue_bind($queue->value, $this->exchangeName, $eventType->value);
         }
 
         $message = new AMQPMessage($message);
-
-        $this->channel->basic_publish($message, $this->exchangeName, $this->routingKey);
+        $this->channel->basic_publish($message, $this->exchangeName, $eventType->value);
 
         $this->channel->close();
         $this->connection->close();
     }
 
-    public function consume(string $queue, callable $callback): void
+    public function consumeNotificationsQueue(): void
     {
-        $this->channel->basic_consume($queue, '', false, true, false, false, $callback);
+        $callback = function (AMQPMessage $msg) {
+            $data = json_decode($msg->getBody(), true);
+            Mail::to($data['email'])->send(new CustomerCreated($data));
+        };
+
+        $this->channel->basic_consume(RabbitQueue::Notifications->value, '', false, true, false, false, $callback);
 
         while ($this->channel->is_open()) {
             $this->channel->wait();

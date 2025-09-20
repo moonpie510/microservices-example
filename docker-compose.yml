@@ -69,6 +69,7 @@ services:
         - ./notifications:/var/www/notifications/site
       depends_on:
         - mysql
+      command: php /var/www/notifications/site/artisan rabbitmq:consume
       networks:
         - common
 
